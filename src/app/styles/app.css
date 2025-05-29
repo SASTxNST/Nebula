@@ -4,7 +4,6 @@
   src: url("./../../Assets/Fonts/Nebula-Regular.otf");
 }
 
-@import "tailwindcss/preflight";
 @tailwind utilities;
 
 body {

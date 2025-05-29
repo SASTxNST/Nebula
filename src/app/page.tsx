@@ -103,20 +103,18 @@ const HomePage: React.FC = () => {
 
 <button
   onClick={() => window.location.href = "/contribution-ranks"}
-  className="overflow-hidden relative w-48 px-6 py-3 h-14 border-2 border-white bg-transparent rounded-full text-lg font-orbitron font-semibold text-white cursor-pointer group transition-all duration-300 hover:border-blue-400 mx-auto my-4 md:my-6 lg:my-8"
+  className="overflow-hidden relative w-48 px-6 py-3 h-14 border-2 border-white bg-transparent rounded-full text-lg font-orbitron font-semibold text-white cursor-pointer group transition-all duration-300 hover:border-red-400 mx-auto my-4 md:my-6 lg:my-8"
 >
-  {/* Animated background layers */}
   <span
-    className="absolute w-full h-full top-0 left-0 bg-blue-600 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"
+    className="absolute w-full h-full top-0 left-0 bg-[#7b031d] rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"
   ></span>
   <span
-    className="absolute w-full h-full top-0 left-0 bg-blue-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left delay-75"
+    className="absolute w-full h-full top-0 left-0 bg-[#a30f2d] rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left delay-75"
   ></span>
   <span
-    className="absolute w-full h-full top-0 left-0 bg-blue-400 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-900 origin-left delay-150"
+    className="absolute w-full h-full top-0 left-0 bg-[#e92d4a] rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-900 origin-left delay-150"
   ></span>
-  
-  {/* Text container */}
+
   <div className="relative z-20 flex items-center justify-center h-full w-full">
     <span className="group-hover:opacity-0 transition-opacity duration-300">
       Contribute
@@ -126,6 +124,7 @@ const HomePage: React.FC = () => {
     </span>
   </div>
 </button>
+
 
             </div>
           )}

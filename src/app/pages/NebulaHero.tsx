@@ -73,10 +73,9 @@ const NebulaHero: React.FC = () => {
 
     let animationFrameId: number;
     let progress1 = 0;
-    let progress2 = Math.PI; // Start the second dot halfway
+    let progress2 = Math.PI;
 
     const animate = () => {
-      // Update progress (speed can be adjusted by changing the increment value)
       progress1 += 0.005;
       progress2 += 0.005;
 
@@ -85,10 +84,10 @@ const NebulaHero: React.FC = () => {
       const textWidth = textRect?.width || 300;
       const textHeight = textRect?.height || 100;
 
-      // Calculate elliptical path dimensions based on text size
-      const a = textWidth * 0.6; // Horizontal radius (60% of text width)
-      const b = textHeight * 0.8; // Vertical radius (80% of text height)
-      const angle = -40 * (Math.PI / 180); // Convert tilt angle to radians
+      const a = textWidth * 0.6;
+
+      const b = textHeight * 0.8;
+      const angle = -40 * (Math.PI / 180);
 
       // Calculate position for dot 1
       const x1 = a * Math.cos(progress1);
@@ -97,14 +96,12 @@ const NebulaHero: React.FC = () => {
       const rotatedX1 = x1 * Math.cos(angle) - y1 * Math.sin(angle);
       const rotatedY1 = x1 * Math.sin(angle) + y1 * Math.cos(angle);
 
-      // Calculate position for dot 2
       const x2 = a * Math.cos(progress2);
       const y2 = b * Math.sin(progress2);
-      // Rotate the ellipse
+
       const rotatedX2 = x2 * Math.cos(angle) - y2 * Math.sin(angle);
       const rotatedY2 = x2 * Math.sin(angle) + y2 * Math.cos(angle);
 
-      // Apply positions to dots
       if (dot1Ref.current) {
         dot1Ref.current.style.transform = `translate(${rotatedX1}px, ${rotatedY1}px)`;
       }

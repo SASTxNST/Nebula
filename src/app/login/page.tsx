@@ -79,11 +79,10 @@ const Page = () => {
     };
 
     return (
-        <div className="flex flex-row items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 to-black font-inter relative overflow-hidden">
-            {/* Background blobs/gradients for modern feel */}
-            <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-600 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
-            <div className="absolute top-1/2 right-1/4 w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
-            <div className="absolute bottom-1/4 left-1/2 w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
+        <div className="relative flex flex-row items-center justify-center min-h-screen p-4 overflow-hidden bg-gradient-to-br from-gray-900 to-black font-inter">
+            <div className="absolute bg-blue-600 rounded-full top-1/4 left-1/4 w-72 h-72 mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+            <div className="absolute bg-purple-600 rounded-full top-1/2 right-1/4 w-72 h-72 mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+            <div className="absolute bg-pink-600 rounded-full bottom-1/4 left-1/2 w-72 h-72 mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
 
             <div className={`fixed left-1/2 top-5 -translate-x-1/2 ${message.includes('success') ? 'bg-green-600' : 'bg-red-600'} text-white py-3 px-6 rounded-lg shadow-lg z-50 transition-all duration-300 ${showMessageBox ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
                 {message}
@@ -91,7 +90,7 @@ const Page = () => {
 
             <div className="flex flex-col overflow-hidden bg-[#0E0E2F] rounded-2xl shadow-2xl md:flex-row max-w-5xl w-full backdrop-blur-sm bg-opacity-80 border border-gray-700 relative z-10">
                 <div className="flex flex-col items-center justify-center p-8 md:p-12 text-white bg-gradient-to-br from-[#0088CC] to-[#00B2FF] md:w-1/2 rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none">
-                    <h2 className="mb-4 text-4xl md:text-5xl font-bold text-white text-center drop-shadow-lg">
+                    <h2 className="mb-4 text-4xl font-bold text-center text-white md:text-5xl drop-shadow-lg">
                         {isLogin ? 'Welcome Back!' : 'Join Us!'}
                     </h2>
                     <p className="mb-6 text-lg text-center opacity-90">
@@ -119,7 +118,7 @@ const Page = () => {
                         {isLogin ? 'Login' : 'Signup'}
                     </h3>
 
-                    <form onSubmit={handleSubmit} className="w-full max-w-sm text-white space-y-6">
+                    <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6 text-white">
                         {!isLogin && (
                             <div>
                                 <label htmlFor="username" className="block mb-2 text-sm font-semibold text-white">

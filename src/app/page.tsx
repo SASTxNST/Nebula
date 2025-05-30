@@ -123,8 +123,17 @@ const HomePage: React.FC = () => {
               </p>
 
               <button
-                onClick={handleContributeClick}
-                className="relative w-48 px-6 py-3 mx-auto my-4 overflow-hidden text-lg font-semibold text-white transition-all duration-300 bg-transparent border-2 border-white rounded-full cursor-pointer h-14 font-orbitron group hover:border-blue-400 md:my-6 lg:my-8"
+                // onClick={handleContributeClick}
+                // className="relative w-48 px-6 py-3 mx-auto my-4 overflow-hidden text-lg font-semibold text-white transition-all duration-300 bg-transparent border-2 border-white rounded-full cursor-pointer h-14 font-orbitron group hover:border-blue-400 md:my-6 lg:my-8"
+                onClick={()=>{
+                  if(isLoggedIn){
+                    router.push('/contribution-ranks')
+                  }else{
+                    router.push('/login')
+                  }
+                  // router.push('/contribution-ranks')
+                }}
+                className="overflow-hidden relative w-48 px-6 py-3 h-14 border-2 border-white bg-transparent rounded-full text-lg font-orbitron font-semibold text-white cursor-pointer group transition-all duration-300 hover:border-blue-400 mx-auto my-4 md:my-6 lg:my-8"
               >
                 <span className="absolute top-0 left-0 w-full h-full transition-transform duration-500 origin-left transform scale-x-0 bg-blue-600 rounded-full group-hover:scale-x-100"></span>
                 <span className="absolute top-0 left-0 w-full h-full transition-transform duration-700 delay-75 origin-left transform scale-x-0 bg-blue-500 rounded-full group-hover:scale-x-100"></span>

@@ -10,7 +10,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Nebula', sans-serif;
-  background: url('/space-bg.jpg') no-repeat center center fixed;
-  background-size: cover;
+  /* background: url('/space-bg.jpg') no-repeat center center fixed; */
+  /* background-size: cover; */
   color: white;
 }

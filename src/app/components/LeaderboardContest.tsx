@@ -1,557 +1,910 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FiAward, FiZap, FiBook, FiClock, FiChevronUp, FiChevronDown } from "react-icons/fi";
 import Sidebar from "../components/Sidebar";
 
-// Define a type for contributors
-interface Contributor {
-  login: string;
-  count: number;
+interface LeaderboardUser {
+  rank: number;
+  name: string;
   avatar: string;
-  html_url: string;
+  score: number;
+  lastSubmission: string;
+  trend: "up" | "down" | "neutral";
+  change: number;
 }
 
-function LeaderboardContest() {
-  const [mounted, setMounted] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  const [contributors, setContributors] = useState<Contributor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+const leaderboardData: LeaderboardUser[] = [
+  {
+    rank: 1,
+    name: "Shitanshu Kumar Singh",
+    avatar: "https://randomuser.me/api/portraits/men/32.jpg",
+    score: 888,
+    lastSubmission: "13 days ago",
+    trend: "up",
+    change: 12,
+  },
+  {
+    rank: 2,
+    name: "Avi Meher",
+    avatar: "https://randomuser.me/api/portraits/men/33.jpg",
+    score: 870,
+    lastSubmission: "18 days ago",
+    trend: "down",
+    change: 5,
+  },
+  {
+    rank: 3,
+    name: "Adityaraj Pal",
+    avatar: "https://randomuser.me/api/portraits/men/34.jpg",
+    score: 868,
+    lastSubmission: "19 days ago",
+    trend: "up",
+    change: 8,
+  },
+  // ... more users
+  {
+    rank: 51,
+    name: "Ankit Kumar Pandey",
+    avatar: "https://randomuser.me/api/portraits/men/35.jpg",
+    score: 290,
+    lastSubmission: "20 days ago",
+    trend: "neutral",
+    change: 0,
+  },
+];
+
+const months = ["All Time", "May 25"];
+
+const LeaderboardPage: React.FC = () => {
+  const [mounted, setMounted] = useState<boolean>(false);
+  const [selectedMonth, setSelectedMonth] = useState<string>(months[1]);
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
 
   useEffect(() => {
     setMounted(true);
-    const checkMobile = () => {
-      const isMobileView = window.innerWidth <= 768;
-      setIsMobile(isMobileView);
-      if (isMobileView) {
-        setIsSidebarOpen(false);
-      }
+    
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
     };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  useEffect(() => {
-    async function fetchPRContributors() {
-      setLoading(true);
-      setError("");
-      try {
-        let page = 1;
-        let allPRs: any[] = [];
-        const headers: Record<string, string> = {};
-        if (process.env.NEXT_PUBLIC_GITHUB_TOKEN) {
-          headers[
-            "Authorization"
-          ] = `token ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`;
-        }
-        while (true) {
-          const res = await fetch(
-            `https://api.github.com/repos/SASTxNST/Website_SAST/pulls?state=all&per_page=100&page=${page}`,
-            { headers }
-          );
-          const prs: any[] = await res.json();
-          if (!Array.isArray(prs) || prs.length === 0) break;
-          allPRs = allPRs.concat(prs);
-          if (prs.length < 100) break;
-          page++;
-        }
-        // Count PRs per user
-        const prCount: Record<string, number> = {};
-        const userInfo: Record<string, { avatar: string; html_url: string }> =
-          {};
-        allPRs.forEach((pr) => {
-          if (pr.user && pr.user.login) {
-            const login = pr.user.login as string;
-            prCount[login] = (prCount[login] || 0) + 1;
-            if (!userInfo[login]) {
-              userInfo[login] = {
-                avatar: pr.user.avatar_url,
-                html_url: pr.user.html_url,
-              };
-            }
-          }
-        });
-        // Convert to array and sort
-        const sorted: Contributor[] = Object.entries(prCount)
-          .map(([login, count]) => ({
-            login,
-            count: count as number,
-            avatar: userInfo[login].avatar,
-            html_url: userInfo[login].html_url,
-          }))
-          .sort((a, b) => b.count - a.count);
-        setContributors(sorted);
-      } catch (e) {
-        setError("Failed to fetch PR data from GitHub.");
-      }
-      setLoading(false);
-    }
-    fetchPRContributors();
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   if (!mounted) return null;
 
-  // Podium logic for top 3
-  const podium = contributors.slice(0, 3);
+  // Premium nebula red color palette
+  const colors = {
+    primary: "#FF2D55", // Vibrant red
+    secondary: "#FF5C7F", // Lighter red
+    accent: "#FF8AA4", // Soft pink accent
+    dark: "#0F0A1A", // Deep dark purple
+    darker: "#070510", // Almost black
+    light: "#F8F4F9", // Off-white
+    gold: "#FFD700",
+    silver: "#C0C0C0",
+    bronze: "#CD7F32",
+    success: "#00E676",
+    danger: "#FF3D00", // Brighter red for danger
+    warning: "#FF9100", // Orange warning
+    nebula: "#FF2D55", // Nebula effect color
+  };
 
   return (
-    <div className="leaderboard-bg">
-      <Sidebar
-        setActiveSection={() => {}}
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-      />
-      <main className="leaderboard-main">
-        <div className="leaderboard-header">
-          <div className="leaderboard-title-group">
-            <span className="leaderboard-contest-label">LEADERBOARD</span>
-            <h1 className="leaderboard-title">GitHub PR Rankings</h1>
-          </div>
-        </div>
+    <div className="leaderboard-container">
+      {/* Animated nebula background elements */}
+      <div className="background-elements">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="floating-orb"
+            style={{
+              background: `radial-gradient(circle, ${i % 3 === 0 ? colors.primary : i % 2 === 0 ? colors.accent : colors.secondary}, transparent 70%)`,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              x: [0, Math.random() * 100 - 50],
+              y: [0, Math.random() * 100 - 50],
+              opacity: [0.2, 0.4, 0.2],
+            }}
+            transition={{
+              duration: Math.random() * 20 + 10,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          />
+        ))}
+      </div>
 
-        {loading ? (
-          <div
-            style={{
-              color: "#fff",
-              margin: "2rem",
-              fontSize: "1.2rem",
-              textAlign: "center",
-            }}
-          >
-            Loading...
-          </div>
-        ) : error ? (
-          <div
-            style={{
-              color: "red",
-              margin: "2rem",
-              fontSize: "1.2rem",
-              textAlign: "center",
-            }}
-          >
-            {error}
-          </div>
-        ) : (
-          <>
-            <div className="leaderboard-podium">
-              {podium[1] && (
-                <div className="podium-item second">
-                  <div className="podium-avatar">
-                    <img src={podium[1].avatar} alt={podium[1].login} />
-                    <span className="podium-rank">2</span>
-                  </div>
-                  <div className="podium-name">{podium[1].login}</div>
-                  <div className="podium-score">{podium[1].count} PRs</div>
-                </div>
-              )}
-              {podium[0] && (
-                <div className="podium-item first">
-                  <div className="podium-avatar">
-                    <img src={podium[0].avatar} alt={podium[0].login} />
-                    <span className="podium-rank">1</span>
-                  </div>
-                  <div className="podium-name">{podium[0].login}</div>
-                  <div className="podium-score">{podium[0].count} PRs</div>
-                </div>
-              )}
-              {podium[2] && (
-                <div className="podium-item third">
-                  <div className="podium-avatar">
-                    <img src={podium[2].avatar} alt={podium[2].login} />
-                    <span className="podium-rank">3</span>
-                  </div>
-                  <div className="podium-name">{podium[2].login}</div>
-                  <div className="podium-score">{podium[2].count} PRs</div>
-                </div>
-              )}
+      <Sidebar setActiveSection={() => {}} />
+
+      <main className="leaderboard-content">
+        {/* Floating header */}
+        <motion.header 
+          className="leaderboard-header"
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.5 }}
+          style={{
+            backdropFilter: isScrolled ? 'blur(10px)' : 'none',
+            backgroundColor: isScrolled ? 'rgba(15, 10, 26, 0.9)' : 'transparent',
+            boxShadow: isScrolled ? `0 4px 30px ${colors.primary}33` : 'none',
+          }}
+        >
+          <div className="header-content">
+            <div className="time-tabs">
+              {months.map((month) => (
+                <motion.button
+                  key={month}
+                  className={`time-tab ${selectedMonth === month ? 'active' : ''}`}
+                  onClick={() => setSelectedMonth(month)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {month}
+                </motion.button>
+              ))}
             </div>
 
-            <div className="leaderboard-table-wrapper">
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>RANK</th>
-                    <th>USER</th>
-                    <th>PRs</th>
-                    <th>PROFILE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contributors.map((user, idx) => (
-                    <tr
-                      key={user.login}
-                      className={idx === 0 ? "highlight-row" : ""}
-                    >
-                      <td>
-                        <span
-                          className={`rank-badge rank-${
-                            idx + 1 <= 3 ? idx + 1 : "default"
-                          }`}
-                        >
-                          {idx + 1}
+            <div className="title-group">
+              <motion.span 
+                className="contest-label"
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                MAY 2025 CONTEST
+              </motion.span>
+              <motion.h1 
+                className="main-title"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                Leaderboard
+              </motion.h1>
+            </div>
+
+            <motion.button 
+              className="how-it-works"
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: `0 0 15px ${colors.accent}`
+              }}
+              whileTap={{ scale: 0.95 }}
+            >
+              How it Works
+            </motion.button>
+          </div>
+        </motion.header>
+
+        {/* Podium section */}
+        <section className="podium-section">
+          <motion.div 
+            className="podium-container"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            {/* Second place */}
+            <motion.div 
+              className="podium-item second-place"
+              whileHover={{ y: -10 }}
+            >
+              <div className="podium-avatar-container">
+                <div className="podium-avatar-frame">
+                  <img src={leaderboardData[1].avatar} alt={leaderboardData[1].name} />
+                </div>
+                <div className="podium-rank-badge">
+                  <FiAward className="award-icon" />
+                  <span>2</span>
+                </div>
+              </div>
+              <h3 className="podium-name">{leaderboardData[1].name}</h3>
+              <div className="podium-score">
+                <span>{leaderboardData[1].score}</span>
+                <span className="trend down">
+                  <FiChevronDown /> {leaderboardData[1].change}
+                </span>
+              </div>
+            </motion.div>
+
+            {/* First place */}
+            <motion.div 
+              className="podium-item first-place"
+              whileHover={{ y: -15 }}
+            >
+              <div className="crown-icon">👑</div>
+              <div className="podium-avatar-container">
+                <div className="podium-avatar-frame">
+                  <img src={leaderboardData[0].avatar} alt={leaderboardData[0].name} />
+                </div>
+                <div className="podium-rank-badge">
+                  <FiAward className="award-icon" />
+                  <span>1</span>
+                </div>
+              </div>
+              <h3 className="podium-name">{leaderboardData[0].name}</h3>
+              <div className="podium-score">
+                <span>{leaderboardData[0].score}</span>
+                <span className="trend up">
+                  <FiChevronUp /> {leaderboardData[0].change}
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Third place */}
+            <motion.div 
+              className="podium-item third-place"
+              whileHover={{ y: -10 }}
+            >
+              <div className="podium-avatar-container">
+                <div className="podium-avatar-frame">
+                  <img src={leaderboardData[2].avatar} alt={leaderboardData[2].name} />
+                </div>
+                <div className="podium-rank-badge">
+                  <FiAward className="award-icon" />
+                  <span>3</span>
+                </div>
+              </div>
+              <h3 className="podium-name">{leaderboardData[2].name}</h3>
+              <div className="podium-score">
+                <span>{leaderboardData[2].score}</span>
+                <span className="trend up">
+                  <FiChevronUp /> {leaderboardData[2].change}
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* XP Banner */}
+        <motion.section 
+          className="xp-banner"
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="banner-content">
+            <div className="banner-text">
+              <h3>Increase your XP to climb the leaderboard!</h3>
+              <p>Solve assignments, arena questions, contests, and quizzes.</p>
+            </div>
+            <div className="banner-actions">
+              <motion.button 
+                className="action-btn assignments"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FiBook className="icon" />
+                Solve Assignments
+              </motion.button>
+              <motion.button 
+                className="action-btn arena"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FiZap className="icon" />
+                Go To Arena
+              </motion.button>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* Leaderboard Table */}
+        <motion.div 
+          className="table-container"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          <div className="table-wrapper">
+            <table className="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>RANK</th>
+                  <th>CHANGE</th>
+                  <th>NAME</th>
+                  <th>XP THIS MONTH</th>
+                  <th>LATEST SUBMISSION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaderboardData.map((user) => (
+                  <motion.tr
+                    key={user.rank}
+                    className={user.rank === 51 ? "highlight-row" : ""}
+                    whileHover={{ 
+                      scale: 1.01,
+                      boxShadow: `0 4px 15px ${colors.primary}33`
+                    }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <td>
+                      <div className={`rank-cell rank-${user.rank}`}>
+                        {user.rank <= 3 ? (
+                          <FiAward className="award-icon" />
+                        ) : null}
+                        {user.rank}
+                      </div>
+                    </td>
+                    <td>
+                      {user.trend === "up" ? (
+                        <span className="trend up">
+                          <FiChevronUp /> {user.change}
                         </span>
-                      </td>
-                      <td className="user-cell">
-                        <img
-                          src={user.avatar}
-                          alt={user.login}
-                          className="user-avatar"
-                        />
-                        <span className="user-name">{user.login}</span>
-                      </td>
-                      <td>
-                        <span className="score-badge">{user.count}</span>
-                      </td>
-                      <td>
-                        <a
-                          href={user.html_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: "#3182ce",
-                            textDecoration: "underline",
-                          }}
-                        >
-                          Profile
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+                      ) : user.trend === "down" ? (
+                        <span className="trend down">
+                          <FiChevronDown /> {user.change}
+                        </span>
+                      ) : (
+                        <span className="trend neutral">–</span>
+                      )}
+                    </td>
+                    <td className="user-cell">
+                      <div className="user-info">
+                        <img src={user.avatar} alt={user.name} className="user-avatar" />
+                        <span className="user-name">{user.name}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="score-cell">{user.score}</div>
+                    </td>
+                    <td>
+                      <div className="submission-cell">
+                        <FiClock className="clock-icon" />
+                        {user.lastSubmission}
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
       </main>
+
       <style jsx>{`
-        .leaderboard-bg {
+        .leaderboard-container {
           min-height: 100vh;
-          background: linear-gradient(180deg, #1a1a2e 0%, #222244 100%);
+          background: linear-gradient(135deg, ${colors.darker} 0%, ${colors.dark} 100%);
           display: flex;
-          width: 100%;
-          overflow-x: hidden;
           position: relative;
+          overflow: hidden;
+          color: ${colors.light};
         }
 
-        .leaderboard-main {
+        .background-elements {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 0;
+          pointer-events: none;
+        }
+
+        .floating-orb {
+          position: absolute;
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          filter: blur(30px);
+          opacity: 0.2;
+        }
+
+        .leaderboard-content {
           flex: 1;
           padding: 2rem;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          transition: all 0.3s ease-out;
-          margin-left: ${isSidebarOpen ? "0" : "0"};
-          width: ${isSidebarOpen ? "calc(100% - 20rem)" : "100%"};
-          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-            Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          position: relative;
+          z-index: 1;
         }
 
         .leaderboard-header {
-          width: 100%;
-          max-width: 1100px;
-          margin: 0 auto 2.5rem;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          padding: 1.5rem 0;
+          transition: all 0.3s ease;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-content {
+          max-width: 1200px;
+          margin: 0 auto;
           display: flex;
-          flex-direction: column;
+          justify-content: space-between;
           align-items: center;
-          justify-content: center;
-          gap: 1rem;
-          transition: all 0.3s ease-out;
-          position: relative;
-          margin-left: auto;
-          margin-right: auto;
-          left: 0; /* Remove left offset for centering */
-          text-align: center; /* Center text inside */
+          gap: 2rem;
         }
-        .leaderboard-title-group {
+
+        .time-tabs {
           display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
+          gap: 0.5rem;
         }
-        .leaderboard-contest-label {
-          color: #fff;
-          background: #3182ce;
-          border-radius: 8px;
-          padding: 0.2rem 1.2rem;
-          font-size: 1rem;
-          font-weight: 600;
-          margin-bottom: 0.5rem;
-          letter-spacing: 0.05em;
-        }
-        .leaderboard-title {
-          color: #fff;
-          font-size: 2.7rem;
-          font-weight: 700;
-          letter-spacing: 0.02em;
-        }
-        .leaderboard-howitworks {
-          background: #fff;
-          color: #2c5282;
+
+        .time-tab {
+          background: rgba(255, 255, 255, 0.1);
+          color: ${colors.light};
           border: none;
-          border-radius: 12px;
-          font-weight: 500;
-          font-size: 1.1rem;
+          border-radius: 20px;
+          font-weight: 600;
+          font-size: 1rem;
           padding: 0.6rem 1.5rem;
           cursor: pointer;
-          box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
         }
-        .leaderboard-podium {
-          width: 100%;
-          max-width: 1100px;
+
+        .time-tab.active {
+          background: ${colors.primary};
+          color: white;
+          box-shadow: 0 0 15px ${colors.primary};
+        }
+
+        .title-group {
           display: flex;
-          align-items: flex-end;
-          justify-content: center;
-          gap: 2.5rem;
-          margin-bottom: 2.5rem;
-          transition: all 0.3s ease-out;
-          margin-left: auto;
-          margin-right: auto;
-          position: relative;
-          /* Removed left offset for centering */
+          flex-direction: column;
+          align-items: center;
         }
+
+        .contest-label {
+          background: ${colors.primary};
+          color: white;
+          border-radius: 20px;
+          padding: 0.3rem 1.5rem;
+          font-size: 0.9rem;
+          font-weight: 600;
+          margin-bottom: 0.5rem;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .main-title {
+          font-size: 2.8rem;
+          font-weight: 800;
+          margin: 0;
+          background: linear-gradient(to right, ${colors.light}, ${colors.accent});
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .how-it-works {
+          background: white;
+          color: ${colors.dark};
+          border: none;
+          border-radius: 20px;
+          font-weight: 600;
+          font-size: 1rem;
+          padding: 0.7rem 1.8rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .podium-section {
+          margin: 3rem 0;
+        }
+
+        .podium-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: flex;
+          justify-content: center;
+          align-items: flex-end;
+          gap: 2rem;
+        }
+
         .podium-item {
           display: flex;
           flex-direction: column;
           align-items: center;
-          background: none;
+          padding: 1.5rem;
+          border-radius: 20px;
+          transition: all 0.3s ease;
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(5px);
         }
-        .podium-item .podium-avatar {
+
+        .first-place {
+          background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
+          border: 1px solid rgba(255, 215, 0, 0.3);
+          margin-bottom: -2rem;
+          min-width: 220px;
+        }
+
+        .second-place {
+          background: linear-gradient(135deg, rgba(192, 192, 192, 0.15), rgba(192, 192, 192, 0.05));
+          border: 1px solid rgba(192, 192, 192, 0.3);
+          min-width: 200px;
+        }
+
+        .third-place {
+          background: linear-gradient(135deg, rgba(205, 127, 50, 0.15), rgba(205, 127, 50, 0.05));
+          border: 1px solid rgba(205, 127, 50, 0.3);
+          min-width: 200px;
+        }
+
+        .crown-icon {
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+          color: ${colors.gold};
+        }
+
+        .podium-avatar-container {
           position: relative;
-          width: 90px;
-          height: 90px;
+          margin-bottom: 1rem;
+        }
+
+        .podium-avatar-frame {
+          width: 100px;
+          height: 100px;
           border-radius: 50%;
-          background: #fff;
+          background: white;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin-bottom: 0.5rem;
-          box-shadow: 0 2px 12px 0 rgba(44, 34, 100, 0.12);
+          overflow: hidden;
+          border: 3px solid ${colors.primary};
+          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
         }
-        .podium-item.first .podium-avatar {
-          width: 110px;
-          height: 110px;
-          margin-bottom: 0.5rem;
+
+        .first-place .podium-avatar-frame {
+          width: 120px;
+          height: 120px;
+          border: 4px solid ${colors.gold};
         }
-        .podium-item .podium-avatar img {
-          width: 80%;
-          height: 80%;
-          border-radius: 50%;
+
+        .second-place .podium-avatar-frame {
+          border: 3px solid ${colors.silver};
+        }
+
+        .third-place .podium-avatar-frame {
+          border: 3px solid ${colors.bronze};
+        }
+
+        .podium-avatar-frame img {
+          width: 100%;
+          height: 100%;
           object-fit: cover;
         }
-        .podium-item .podium-rank {
+
+        .podium-rank-badge {
           position: absolute;
-          bottom: -18px;
+          bottom: -15px;
           left: 50%;
           transform: translateX(-50%);
-          background: #fff;
-          color: #2d1e60;
+          background: ${colors.dark};
+          color: white;
           font-weight: 700;
           font-size: 1.2rem;
           border-radius: 50%;
-          padding: 0.2rem 0.9rem;
-          box-shadow: 0 2px 8px 0 rgba(44, 34, 100, 0.1);
-        }
-        .podium-item.first .podium-rank {
-          font-size: 1.4rem;
-          padding: 0.2rem 1.2rem;
-        }
-        .podium-item .podium-name {
-          color: #fff;
-          font-weight: 700;
-          font-size: 1.1rem;
-          margin-bottom: 0.2rem;
-        }
-        .podium-item .podium-score {
-          color: #ffb800;
-          font-weight: 700;
-          font-size: 1.1rem;
-        }
-        .podium-item.first {
-          margin-bottom: 1.5rem;
-        }
-        .leaderboard-xp-banner {
-          background: #2b6cb0;
-          color: #fff;
-          border-radius: 18px;
-          padding: 1.2rem 2rem;
+          width: 40px;
+          height: 40px;
           display: flex;
           align-items: center;
+          justify-content: center;
+          border: 2px solid ${colors.primary};
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .first-place .podium-rank-badge {
+          background: ${colors.gold};
+          color: ${colors.dark};
+          border: 2px solid white;
+          width: 45px;
+          height: 45px;
+          font-size: 1.3rem;
+        }
+
+        .second-place .podium-rank-badge {
+          background: ${colors.silver};
+          color: ${colors.dark};
+        }
+
+        .third-place .podium-rank-badge {
+          background: ${colors.bronze};
+          color: white;
+        }
+
+        .award-icon {
+          margin-right: 5px;
+        }
+
+        .podium-name {
+          font-size: 1.1rem;
+          font-weight: 600;
+          margin: 0.5rem 0;
+          text-align: center;
+          max-width: 100%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .podium-score {
+          font-size: 1.5rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .first-place .podium-score {
+          font-size: 1.8rem;
+          color: ${colors.gold};
+        }
+
+        .second-place .podium-score {
+          color: ${colors.silver};
+        }
+
+        .third-place .podium-score {
+          color: ${colors.bronze};
+        }
+
+        .trend {
+          font-size: 0.9rem;
+          display: flex;
+          align-items: center;
+        }
+
+        .trend.up {
+          color: ${colors.success};
+        }
+
+        .trend.down {
+          color: ${colors.danger};
+        }
+
+        .trend.neutral {
+          color: ${colors.light};
+          opacity: 0.7;
+        }
+
+        .xp-banner {
+          max-width: 1200px;
+          margin: 0 auto 3rem;
+          background: linear-gradient(135deg, ${colors.primary}, ${colors.secondary});
+          border-radius: 20px;
+          padding: 1.5rem 2rem;
+          box-shadow: 0 5px 25px ${colors.primary}4D;
+        }
+
+        .banner-content {
+          display: flex;
           justify-content: space-between;
-          max-width: 1100px;
-          width: 100%;
-          margin-bottom: 2.5rem;
-          font-size: 1.15rem;
-          font-weight: 500;
+          align-items: center;
+          gap: 2rem;
         }
-        .leaderboard-xp-sub {
+
+        .banner-text h3 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 0 0 0.5rem;
+        }
+
+        .banner-text p {
           font-size: 1rem;
-          font-weight: 400;
+          opacity: 0.9;
+          margin: 0;
         }
-        .leaderboard-xp-actions {
+
+        .banner-actions {
           display: flex;
           gap: 1rem;
         }
-        .leaderboard-xp-btn {
-          background: #fff;
-          color: #2b6cb0;
+
+        .action-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.8rem 1.5rem;
+          border-radius: 15px;
           border: none;
-          border-radius: 12px;
-          font-weight: 500;
-          font-size: 1.1rem;
-          padding: 0.7rem 1.5rem;
+          font-weight: 600;
           cursor: pointer;
-          box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+          transition: all 0.3s ease;
         }
-        .leaderboard-table-wrapper {
-          width: 100%;
-          max-width: 1300px; /* Increased from 1100px to 1300px */
-          background: #fff;
-          border-radius: 18px;
-          box-shadow: 0 2px 16px 0 rgba(44, 34, 100, 0.1);
-          overflow-x: auto;
-          transition: all 0.3s ease-out;
+
+        .action-btn.assignments {
+          background: white;
+          color: ${colors.dark};
+        }
+
+        .action-btn.arena {
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+          backdrop-filter: blur(5px);
+        }
+
+        .action-btn .icon {
+          font-size: 1.2rem;
+        }
+
+        .table-container {
+          max-width: 1200px;
           margin: 0 auto;
-          position: relative;
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          overflow: hidden;
+          box-shadow: 0 5px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .table-wrapper {
+          overflow-x: auto;
+          padding: 1rem;
         }
 
         .leaderboard-table {
           width: 100%;
           border-collapse: separate;
-          border-spacing: 0;
-          font-size: 1.08rem;
-          min-width: 800px;
-          max-width: 1000px; /* Prevent content from stretching too much */
-          margin: 0 auto; /* Center the table inside the wrapper */
+          border-spacing: 0 0.5rem;
         }
-        .leaderboard-table thead tr {
-          background: #f7f7fa;
-        }
-        .leaderboard-table th,
-        .leaderboard-table td {
-          padding: 1.1rem 0.8rem;
-          text-align: left;
-          font-weight: 600;
-        }
+
         .leaderboard-table th {
-          color: #3182ce;
-          font-size: 1.05rem;
+          color: ${colors.primary};
           font-weight: 700;
+          font-size: 1rem;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          padding: 1rem 1.5rem;
+          text-align: left;
+          background: rgba(255, 45, 85, 0.1);
         }
+
         .leaderboard-table td {
-          color: #2d1e60;
-          font-weight: 500;
+          padding: 1.2rem 1.5rem;
+          background: rgba(255, 255, 255, 0.03);
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .leaderboard-table .user-cell {
+
+        .leaderboard-table tr:first-child td {
+          border-top: none;
+        }
+
+        .leaderboard-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .rank-cell {
           display: flex;
           align-items: center;
-          gap: 0.7rem;
+          gap: 0.5rem;
+          font-weight: 700;
+          padding: 0.5rem 1rem;
+          border-radius: 10px;
+          width: fit-content;
         }
+
+        .rank-1 {
+          background: rgba(255, 215, 0, 0.2);
+          color: ${colors.gold};
+        }
+
+        .rank-2 {
+          background: rgba(192, 192, 192, 0.2);
+          color: ${colors.silver};
+        }
+
+        .rank-3 {
+          background: rgba(205, 127, 50, 0.2);
+          color: ${colors.bronze};
+        }
+
+        .rank-default {
+          background: rgba(255, 255, 255, 0.1);
+          color: ${colors.light};
+        }
+
+        .user-cell .user-info {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
         .user-avatar {
-          width: 38px;
-          height: 38px;
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
           object-fit: cover;
-          border: 2px solid #e6e6ff;
+          border: 2px solid ${colors.primary};
         }
+
         .user-name {
           font-weight: 600;
-          color: #2d1e60;
         }
-        .score-badge {
-          color: #ffb800;
+
+        .score-cell {
           font-weight: 700;
-          font-size: 1.1rem;
+          color: ${colors.warning};
         }
+
         .submission-cell {
-          color: #4299e1;
-          font-size: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: ${colors.accent};
         }
-        .rank-badge {
-          display: inline-block;
-          min-width: 2.2rem;
-          text-align: center;
-          border-radius: 12px;
-          font-weight: 700;
-          font-size: 1.1rem;
-          background: #f7f7fa;
-          color: #2d1e60;
+
+        .clock-icon {
+          opacity: 0.7;
         }
-        .rank-1 {
-          background: #ffe066;
-          color: #2d1e60;
+
+        .highlight-row td {
+          background: rgba(255, 45, 85, 0.1);
+          border-color: rgba(255, 45, 85, 0.2) !important;
         }
-        .rank-2 {
-          background: #e6e6e6;
-          color: #2d1e60;
-        }
-        .rank-3 {
-          background: #ffd6a0;
-          color: #2d1e60;
-        }
-        .highlight-row {
-          background: #fff7e6;
-        }
-        @media (max-width: 1200px) {
-          .leaderboard-header,
-          .leaderboard-podium,
-          .leaderboard-table-wrapper {
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
-            /* Remove left offset for centering */
-          }
-        }
+
         @media (max-width: 1024px) {
-          .leaderboard-header,
-          .leaderboard-podium,
-          .leaderboard-table-wrapper {
-            max-width: calc(100% - 2rem);
-            margin-left: auto;
-            margin-right: auto;
+          .header-content {
+            flex-direction: column;
+            gap: 1rem;
           }
-        }
-        @media (max-width: 768px) {
-          .leaderboard-main {
-            padding: 1.5rem;
-            margin-left: 0;
+
+          .podium-container {
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
           }
-          .leaderboard-header {
-            padding: 0;
+
+          .podium-item {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 0 !important;
           }
-          .leaderboard-title {
-            font-size: 2rem;
+
+          .banner-content {
+            flex-direction: column;
             text-align: center;
           }
-          .leaderboard-table {
-            min-width: 700px;
+
+          .banner-actions {
+            width: 100%;
+            justify-content: center;
           }
         }
-        @media (max-width: 480px) {
-          .leaderboard-main {
+
+        @media (max-width: 768px) {
+          .leaderboard-content {
             padding: 1rem;
           }
-          .leaderboard-table {
-            min-width: 600px;
+
+          .main-title {
+            font-size: 2rem;
           }
-          .leaderboard-table th,
-          .leaderboard-table td {
-            padding: 0.6rem 0.4rem;
-            font-size: 0.85rem;
+
+          .time-tabs {
+            flex-wrap: wrap;
+            justify-content: center;
           }
-        }
-        @media (max-width: 1400px) {
-          .leaderboard-table-wrapper {
-            max-width: 1100px;
+
+          .xp-banner {
+            padding: 1rem;
+          }
+
+          .banner-text h3 {
+            font-size: 1.2rem;
+          }
+
+          .banner-actions {
+            flex-direction: column;
+          }
+
+          .action-btn {
+            width: 100%;
+            justify-content: center;
           }
         }
       `}</style>
     </div>
   );
-}
+};
 
-export const dynamic = "force-dynamic";
-
-export default LeaderboardContest;
+export default LeaderboardPage;

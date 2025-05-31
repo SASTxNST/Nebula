@@ -40,6 +40,7 @@ const Profile: React.FC<ProfileProps> = ({ repositories }) => {
     const [commitDetails, setCommitDetails] = useState<CommitDetail[]>([]);
     const [mergeDetails, setMergeDetails] = useState<MergeDetail[]>([]);
     const [loadingGithubActivity, setLoadingGithubActivity] = useState<boolean>(false);
+    const [githubAvatarUrl, setGithubAvatarUrl] = useState<string | null>(null); 
 
     useEffect(() => {
         const email = localStorage.getItem('email');
@@ -81,6 +82,7 @@ const Profile: React.FC<ProfileProps> = ({ repositories }) => {
             if (!user?.githubId) {
                 setCommitDetails([]);
                 setMergeDetails([]);
+                setGithubAvatarUrl(null); 
                 return;
             }
 
@@ -89,6 +91,14 @@ const Profile: React.FC<ProfileProps> = ({ repositories }) => {
             const fetchedMerges: MergeDetail[] = [];
 
             try {
+                const userRes = await fetch(`https://api.github.com/users/${user.githubId}`);
+                const userData = await userRes.json();
+                if (userRes.ok && userData.avatar_url) {
+                    setGithubAvatarUrl(userData.avatar_url);
+                } else {
+                    setGithubAvatarUrl(null);
+                }
+
                 const eventsRes = await fetch(`https://api.github.com/users/${user.githubId}/events/public`);
                 const eventsData = await eventsRes.json();
 
@@ -117,6 +127,7 @@ const Profile: React.FC<ProfileProps> = ({ repositories }) => {
             } catch (err) {
                 console.error(`Error fetching GitHub activity for ${user.githubId}:`, err);
                 setError('Failed to fetch GitHub activity.');
+                setGithubAvatarUrl(null); 
             }
 
             setCommitDetails(fetchedCommits);
@@ -137,9 +148,20 @@ const Profile: React.FC<ProfileProps> = ({ repositories }) => {
       {user ? (
         <div className="bg-[#111111] border border-[#2D2D2D] p-6 rounded-xl shadow-md mb-8">
           <h3 className="text-2xl font-semibold text-[#00B2FF] mb-4">Profile Details</h3>
-          <p className="mb-2 text-lg"><strong>Username:</strong> {user.username}</p>
-          <p className="mb-2 text-lg"><strong>Email:</strong> {user.email}</p>
-          {user.githubId && <p className="mb-2 text-lg"><strong>GitHub ID:</strong> {user.githubId}</p>}
+          <div className="flex items-center mb-4"> {/* Flex container for avatar and details */}
+            {githubAvatarUrl && (
+              <img
+                src={githubAvatarUrl}
+                alt={`${user.username}'s GitHub Avatar`}
+                className="w-24 h-24 rounded-full mr-4 border-2 border-[#00B2FF]"
+              />
+            )}
+            <div>
+              <p className="mb-2 text-lg"><strong>Username:</strong> {user.username}</p>
+              <p className="mb-2 text-lg"><strong>Email:</strong> {user.email}</p>
+              {user.githubId && <p className="mb-2 text-lg"><strong>GitHub ID:</strong> {user.githubId}</p>}
+            </div>
+          </div>
           <p className="mt-4 text-sm text-gray-500">Account created: {new Date(user.createdAt).toLocaleString()}</p>
         </div>
       ) : (

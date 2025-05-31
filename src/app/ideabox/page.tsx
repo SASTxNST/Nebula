@@ -1,74 +1,69 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
 
 const IdeaForm = () => {
   const [idea, setIdea] = useState("");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
-  const formRef = useRef<HTMLFormElement>(null);
-  const confettiRef = useRef<HTMLDivElement>(null);
-  const mailIconRef = useRef<HTMLSpanElement>(null);
-  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef(null);
+  const confettiRef = useRef(null);
+  const mailIconRef = useRef(null);
+  const submitButtonRef = useRef(null);
 
   useEffect(() => {
-    gsap.from(formRef.current, {
-      opacity: 0,
-      y: 60,
-      scale: 0.95,
-      duration: 1,
-      ease: "power3.out",
-    });
+
+    if (formRef.current) {
+      formRef.current.style.opacity = "0";
+      formRef.current.style.transform = "translateY(30px)";
+
+      setTimeout(() => {
+        if (formRef.current) {
+          formRef.current.style.transition = "all 0.8s ease-out";
+          formRef.current.style.opacity = "1";
+          formRef.current.style.transform = "translateY(0)";
+        }
+      }, 100);
+    }
   }, []);
 
   const triggerConfetti = () => {
     if (!confettiRef.current) return;
 
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 30; i++) {
       const flake = document.createElement("div");
       flake.className = "flake";
       flake.style.left = `${Math.random() * 100}%`;
-      flake.style.background = `hsl(${Math.random() * 360}, 100%, 60%)`;
+      flake.style.background = `hsl(${280 + Math.random() * 40}, 70%, 60%)`;
       confettiRef.current.appendChild(flake);
 
-      gsap.to(flake, {
-        y: "100vh",
-        x: `${Math.random() * 200 - 100}px`,
-        rotation: Math.random() * 720,
-        duration: 2 + Math.random(),
-        ease: "power2.out",
-        onComplete: () => flake.remove(),
-      });
+      // Simple animation without gsap
+      flake.style.transition = `all ${2 + Math.random()}s ease-out`;
+      flake.style.transform = `translateY(100vh) translateX(${Math.random() * 200 - 100}px) rotate(${Math.random() * 720}deg)`;
+      flake.style.opacity = "0";
+
+      setTimeout(() => flake.remove(), 3000);
     }
   };
 
-  // Animate mail icon flying up inside the button
   const animateMailIcon = () => {
     if (!mailIconRef.current) return;
 
-    gsap.set(mailIconRef.current, {
-      y: 0,
-      opacity: 1,
-      scale: 1,
-      display: "inline-block",
-    });
+    mailIconRef.current.style.display = "inline-block";
+    mailIconRef.current.style.transition = "all 1s ease-out";
+    mailIconRef.current.style.transform = "translateY(-40px)";
+    mailIconRef.current.style.opacity = "0";
 
-    gsap.to(mailIconRef.current, {
-      y: -40,
-      opacity: 0,
-      scale: 0.5,
-      duration: 1,
-      ease: "power1.out",
-      onComplete: () => {
-        if (mailIconRef.current) {
-          mailIconRef.current.style.display = "none";
-        }
-      },
-    });
+    setTimeout(() => {
+      if (mailIconRef.current) {
+        mailIconRef.current.style.display = "none";
+        mailIconRef.current.style.transform = "translateY(0)";
+        mailIconRef.current.style.opacity = "1";
+      }
+    }, 1000);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus("Sending...");
 
@@ -98,191 +93,244 @@ const IdeaForm = () => {
 
   return (
     <div
-      style={{
-        position: "relative",
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "2rem",
-        overflow: "hidden",
-        backgroundColor: "#000",
-      }}
+      className="min-h-screen flex justify-center items-center p-8 relative overflow-hidden"
+      style={{ backgroundColor: "#0f0f23" }}
     >
+
       <div
+        className="absolute top-20 right-0 w-80 h-96 opacity-40"
         style={{
-          position: "absolute",
-          top: "10%",
-          left: "5%",
-          width: "200px",
-          height: "200px",
-          background:
-            "radial-gradient(circle, rgba(155,89,182,0.7) 0%, transparent 70%)",
-          filter: "blur(80px)",
-          zIndex: 1,
+          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+          clipPath: "polygon(100% 0%, 100% 100%, 0% 100%)",
+          transform: "translateX(20%)",
         }}
       />
+
       <div
+        className="absolute bottom-10 left-0 w-60 h-60 opacity-30"
         style={{
-          position: "absolute",
-          bottom: "15%",
-          right: "10%",
-          width: "250px",
-          height: "250px",
-          background:
-            "radial-gradient(circle, rgba(255,0,122,0.7) 0%, transparent 70%)",
-          filter: "blur(100px)",
-          zIndex: 1,
+          background: "linear-gradient(45deg, #7c3aed 0%, #a855f7 100%)",
+          clipPath: "polygon(0% 0%, 100% 100%, 0% 100%)",
+          transform: "translateX(-30%)",
         }}
       />
-      <div
-        style={{
-          position: "absolute",
-          top: "5%",
-          right: "15%",
-          width: "120px",
-          height: "120px",
-          background:
-            "radial-gradient(circle, rgba(255,255,0,0.7) 0%, transparent 70%)",
-          filter: "blur(60px)",
-          zIndex: 1,
-        }}
-      />
+
 
       <div
         ref={confettiRef}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "100%",
-          pointerEvents: "none",
-          zIndex: 10,
-        }}
+        className="absolute inset-0 pointer-events-none"
+        style={{ zIndex: 1000 }}
       />
 
-      <form
+
+      <div
         ref={formRef}
-        onSubmit={handleSubmit}
+        className="rounded-3xl shadow-2xl p-8 max-w-md w-full relative"
         style={{
-          background:
-            "linear-gradient(90deg,rgba(22, 48, 115, 0.3) 13%, rgba(71, 11, 39, 0.1) 100%)",
-          borderRadius: "12px",
-          padding: "2rem",
-          maxWidth: "500px",
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1rem",
-          zIndex: 20,
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          background: "linear-gradient(145deg, #1a1a2e 0%, #16213e 100%)",
+          boxShadow:
+            "0 25px 50px -12px rgba(99, 102, 241, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+          border: "1px solid rgba(139, 92, 246, 0.2)",
+          zIndex: 10,
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
         }}
       >
-        <h2
-          style={{
-            textAlign: "center",
-            fontWeight: "bold",
-            fontSize: "1.75rem",
-            color: "#00bfff",
-            letterSpacing: "1px",
-          }}
-        >
-          Submit Your Idea
-        </h2>
 
-        <textarea
-          placeholder="Your idea..."
-          value={idea}
-          onChange={(e) => setIdea(e.target.value)}
-          required
-          rows={5}
+        <div
+          className="inline-block px-4 py-2 rounded-full text-sm font-medium mb-6"
           style={{
-            padding: "0.75rem",
-            borderRadius: "8px",
-            border: "1px solid #444",
-            backgroundColor: "#222",
-            color: "#fff",
-            fontWeight: "normal",
-            fontFamily: "inherit",
-          }}
-        />
-        <input
-          type="email"
-          placeholder="Your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{
-            padding: "0.75rem",
-            borderRadius: "8px",
-            border: "1px solid #444",
-            backgroundColor: "#222",
-            color: "#fff",
-            fontWeight: "normal",
-            fontFamily: "inherit",
-          }}
-        />
-        <button
-          ref={submitButtonRef}
-          type="submit"
-          style={{
-            position: "relative",
-            padding: "0.75rem",
-            background: "linear-gradient(to right, #00b894, #00cec9)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "normal",
-            fontFamily: "inherit",
-            transition: "all 0.3s ease",
-            overflow: "visible",
+            backgroundColor: "rgba(139, 92, 246, 0.2)",
+            color: "#c084fc",
+            letterSpacing: "0.05em",
+            border: "1px solid rgba(139, 92, 246, 0.3)",
           }}
         >
-          🚀 Submit Idea
-          <span
-            ref={mailIconRef}
-            style={{
-              display: "none",
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              width: "18px",
-              height: "18px",
-              transform: "translate(-50%, -50%)",
-              pointerEvents: "none",
-            }}
-            aria-hidden="true"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="#fff"
-              viewBox="0 0 24 24"
-              width="18"
-              height="18"
+          SUBMIT
+        </div>
+
+        {/* Title */}
+        <h1
+          className="text-3xl font-bold mb-4"
+          style={{
+            color: "#f8fafc",
+            fontWeight: "700",
+            letterSpacing: "-0.025em",
+          }}
+        >
+          Share Your Idea
+        </h1>
+
+
+        <p
+          className="mb-8 leading-relaxed"
+          style={{
+            color: "#cbd5e1",
+            fontSize: "16px",
+            lineHeight: "1.6",
+          }}
+        >
+          Have a brilliant idea? We'd love to hear from you. Share your thoughts
+          and let's make something amazing together.
+        </p>
+
+
+        <div className="space-y-6">
+          <div>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{
+                color: "#f1f5f9",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
             >
-              <path d="M2 6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm2 0v.01L12 13l8-6.99V6H4zm16 2.08L13.28 13 18 16.92V8.08z" />
-            </svg>
-          </span>
-        </button>
-        <p style={{ textAlign: "center", marginTop: "0.5rem" }}>{status}</p>
-      </form>
+              Your Idea
+            </label>
+            <textarea
+              placeholder="Describe your innovative idea..."
+              value={idea}
+              onChange={(e) => setIdea(e.target.value)}
+              required
+              rows={4}
+              className="w-full px-4 py-3 rounded-xl transition-all duration-200 resize-none"
+              style={{
+                backgroundColor: "#0f172a",
+                border: "1px solid #334155",
+                color: "#f8fafc",
+                fontSize: "16px",
+                fontFamily: "inherit",
+                lineHeight: "1.5",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "#8b5cf6")}
+              onBlur={(e) => (e.target.style.borderColor = "#334155")}
+            />
+          </div>
 
-      <style>
-        {`
-          .flake {
-            position: absolute;
-            top: 0;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            opacity: 0.9;
-            pointer-events: none;
-            z-index: 9999;
-          }
-        `}
-      </style>
+          <div>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{
+                color: "#f1f5f9",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              Email Address
+            </label>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-xl transition-all duration-200"
+              style={{
+                backgroundColor: "#0f172a",
+                border: "1px solid #334155",
+                color: "#f8fafc",
+                fontSize: "16px",
+                fontFamily: "inherit",
+                lineHeight: "1.5",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "#8b5cf6")}
+              onBlur={(e) => (e.target.style.borderColor = "#334155")}
+            />
+          </div>
+
+          <button
+            ref={submitButtonRef}
+            onClick={handleSubmit}
+            className="w-full py-4 px-6 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+              fontSize: "16px",
+              boxShadow: "0 8px 32px rgba(139, 92, 246, 0.3)",
+              fontFamily: "inherit",
+              fontWeight: "600",
+              letterSpacing: "0.025em",
+            }}
+          >
+            <span className="flex items-center justify-center gap-2">
+              Submit Idea
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </span>
+
+            <span
+              ref={mailIconRef}
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 hidden"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            </span>
+          </button>
+
+          {status && (
+            <p
+              className="text-center text-sm font-medium"
+              style={{
+                color: status.includes("✅")
+                  ? "#059669"
+                  : status.includes("❌")
+                    ? "#dc2626"
+                    : "#6b7280",
+              }}
+            >
+              {status}
+            </p>
+          )}
+        </div>
+
+
+        <div className="mt-8 pt-6" style={{ borderTop: "1px solid #334155" }}>
+          <a
+            href="#"
+            className="font-medium hover:text-purple-400 transition-colors duration-200 flex items-center gap-2"
+            style={{ color: "#a855f7" }}
+          >
+            Learn more
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .flake {
+          position: absolute;
+          top: 0;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          opacity: 0.8;
+          pointer-events: none;
+          z-index: 999;
+        }
+      `}</style>
     </div>
   );
 };

@@ -136,6 +136,8 @@ const Profile = ({ repositories }) => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
       localStorage.removeItem("email");
+      // Dispatch custom event to notify navbar
+      window.dispatchEvent(new Event("loginStateChanged"));
     }
     window.location.href = "/";
   };

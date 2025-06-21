@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import toast, { Toaster } from "react-hot-toast";
 
 const LeaderboardContest = () => {
   const [mounted, setMounted] = useState(false);
@@ -31,16 +32,15 @@ const LeaderboardContest = () => {
       try {
         let page = 1;
         let allPRs = [];
-        const headers = {};
-        if (process.env.NEXT_PUBLIC_GITHUB_TOKEN) {
-          headers["Authorization"] = `token ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`;
-        }
+        
         while (true) {
-          const res = await fetch(
-            `https://api.github.com/repos/SASTxNST/Website_SAST/pulls?state=all&per_page=100&page=${page}`,
-            { headers }
-          );
-          const prs = await res.json();
+          const res = await fetch(`/api/github?endpoint=pulls&repoName=SASTxNST/Website_SAST&page=${page}`);
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+          }
+          const responseData = await res.json();
+          const prs = responseData.data;
           if (!Array.isArray(prs) || prs.length === 0) break;
           allPRs = allPRs.concat(prs);
           if (prs.length < 100) break;
@@ -71,7 +71,15 @@ const LeaderboardContest = () => {
           }))
           .sort((a, b) => b.count - a.count);
         setContributors(sorted);
-      } catch (e) {
+      } catch (err) {
+        console.error("Error fetching PR data:", err);
+        if (err.message.includes("rate limit")) {
+          toast.error("GitHub API rate limit exceeded. Please try again later.");
+        } else if (err.message.includes("GitHub token not configured")) {
+          toast.error("GitHub token not configured.");
+        } else {
+          toast.error("Failed to fetch PR data. Please try again later.");
+        }
         setError("Failed to fetch PR data from GitHub.");
       }
       setLoading(false);
@@ -218,6 +226,16 @@ const LeaderboardContest = () => {
           </>
         )}
       </main>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
     </div>
   );
 };

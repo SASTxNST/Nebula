@@ -21,8 +21,7 @@ const ContributionGraph = dynamic(() => import("react-github-calendar"), {
 });
 
 const Profile = ({ repositories }) => {
-  const repoName = "SASTxNST/Website_SAST";
-
+  const selectedRepo = "SASTxNST/Website_SAST";
 
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -141,29 +140,23 @@ const Profile = ({ repositories }) => {
     window.location.href = "/";
   };
 
-  const fetchAllPages = async (url, options) => {
+  const fetchAllPages = async (endpoint, githubId, repoName) => {
     let results = [];
-    let nextUrl = `${url}?per_page=100`;
+    let page = 1;
+    let hasNext = true;
 
-    while (nextUrl) {
-      const response = await fetch(nextUrl, options);
+    while (hasNext) {
+      const response = await fetch(`/api/github?endpoint=${endpoint}&githubId=${githubId}&repoName=${repoName}&page=${page}`);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Request failed with status ${response.status}: ${errorText}`);
       }
 
-      const data = await response.json();
-      results = results.concat(data);
-
-      const linkHeader = response.headers.get('Link');
-      nextUrl = null;
-      if (linkHeader) {
-        const links = linkHeader.split(', ');
-        const nextLink = links.find(link => link.endsWith('rel="next"'));
-        if (nextLink) {
-          nextUrl = nextLink.match(/<(.+)>/)[1];
-        }
-      }
+      const result = await response.json();
+      results = results.concat(result.data);
+      
+      hasNext = result.pagination?.hasNext || false;
+      page++;
     }
     return results;
   };
@@ -171,7 +164,10 @@ const Profile = ({ repositories }) => {
   const fetchAll = useCallback(async (forceRefresh = false) => {
     if (!formData.githubId) {
       console.log("No GitHub ID provided, skipping fetch.");
-      toast.error("Please enter a GitHub username to fetch data.");
+      // Only show error toast if user has been loaded but no GitHub ID is set
+      if (user !== null) {
+        toast.error("Please enter a GitHub username to fetch data.");
+      }
       return;
     }
 
@@ -186,36 +182,46 @@ const Profile = ({ repositories }) => {
 
     try {
       console.log(`Fetching data for GitHub ID: ${formData.githubId}`);
-      const [userEventsRes, repoEventsRes, repoRes, contributorsRes] = await Promise.allSettled([
-        fetchAllPages(`https://api.github.com/users/${formData.githubId}/events`, { }),
-        fetchAllPages(`https://api.github.com/repos/${repoName}/events`, { }),
-        fetch(`https://api.github.com/repos/${repoName}`, { }), // Not paginated
-        fetchAllPages(`https://api.github.com/repos/${repoName}/contributors`, { }),
+      const [repoEventsRes, repoRes, contributorsRes] = await Promise.allSettled([
+        fetchAllPages("repoEvents", formData.githubId, selectedRepo),
+        fetch("/api/github", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: "repo", githubId: formData.githubId, repoName: selectedRepo }),
+        }),
+        fetchAllPages("contributors", formData.githubId, selectedRepo),
       ]);
 
       // Log response headers to check rate limits
-      userEventsRes.status === "fulfilled" &&
-        console.log("User Events Rate Limit Remaining:", userEventsRes.value.headers.get("X-RateLimit-Remaining"));
+      // Note: userEventsRes is now the result data, not a response object
 
       const getJsonIfFulfilled = async (resPromise) => {
         if (resPromise.status === "fulfilled") {
-          if (!resPromise.value.ok) {
-            const errorText = await resPromise.value.text();
-            throw new Error(`Request failed with status ${resPromise.value.status}: ${errorText}`);
+          // For fetchAllPages calls, the value is already the result
+          if (Array.isArray(resPromise.value)) {
+            return resPromise.value;
           }
-          return await resPromise.value.json();
+          // For direct fetch calls, we need to handle the response
+          if (resPromise.value && typeof resPromise.value.json === 'function') {
+            if (!resPromise.value.ok) {
+              const errorText = await resPromise.value.text();
+              throw new Error(`Request failed with status ${resPromise.value.status}: ${errorText}`);
+            }
+            const result = await resPromise.value.json();
+            return result.data || result;
+          }
+          // If it's already processed data
+          return resPromise.value;
         }
         throw new Error(`Request failed: ${resPromise.reason || "unknown error"}`);
       };
 
-      const [userEvents, repoEvents, repo, contributors] = await Promise.all([
-        getJsonIfFulfilled(userEventsRes),
+      const [repoEvents, repo, contributors] = await Promise.all([
         getJsonIfFulfilled(repoEventsRes),
         getJsonIfFulfilled(repoRes),
         getJsonIfFulfilled(contributorsRes),
       ]);
 
-      console.log("User Events:", userEvents);
       console.log("Repo Events:", repoEvents);
       console.log("Repo Meta:", repo);
       console.log("Contributors:", contributors);
@@ -234,104 +240,23 @@ const Profile = ({ repositories }) => {
       const issueMap = {};
       const prMap = {};
 
-      // Process user events (all repositories)
-      if (Array.isArray(userEvents)) {
-        userEvents.forEach((event) => {
-          const dateStr = new Date(event.created_at).toLocaleDateString("en-US");
-
-          if (event.type === "PushEvent" && event.actor.login === formData.githubId && event.repo.name === repoName) {
-            event.payload.commits.forEach((c) => {
-              if (event.actor.login === formData.githubId) {
-                const commitExists = commits.some((commit) => commit.sha === c.sha);
-                if (!commitExists) {
-                  commits.push({
-                    repoName: event.repo.name,
-                    message: c.message,
-                    date: new Date(event.created_at).toLocaleString("en-US"),
-                    sha: c.sha,
-                    url: `https://github.com/${event.repo.name}/commit/${c.sha}`,
-                  });
-                  commitMap[dateStr] = (commitMap[dateStr] || 0) + 1;
-                }
-              }
-            });
-          } 
-
-          if (
-            event.type === "PullRequestEvent" &&
-            event.payload.pull_request?.merged &&
-            event.actor.login === formData.githubId &&
-            event.repo.name === repoName
-          ) {
-            const mergeExists = merges.some((merge) => merge.url === event.payload.pull_request.html_url);
-            if (!mergeExists) {
-              merges.push({
-                repoName: event.repo.name,
-                title: event.payload.pull_request.title,
-                date: new Date(event.payload.pull_request.merged_at).toLocaleString("en-US"),
-                url: event.payload.pull_request.html_url,
-              });
-            }
-          }
-
-          if (
-            event.type === "IssuesEvent" &&
-            event.payload.action === "opened" &&
-            event.actor.login === formData.githubId &&
-            event.repo.name === repoName
-          ) {
-            console.log("Issue Event:", event);
-            const issueExists = issues.some((issue) => issue.url === event.payload.issue.html_url);
-            if (!issueExists) {
-              issues.push({
-                repoName: event.repo.name,
-                title: event.payload.issue.title,
-                date: new Date(event.created_at).toLocaleString("en-US"),
-                url: event.payload.issue.html_url,
-              });
-              issueMap[dateStr] = (issueMap[dateStr] || 0) + 1;
-            }
-          }
-
-          if (
-            event.type === "PullRequestEvent" &&
-            event.payload.action === "opened" &&
-            event.actor.login === formData.githubId &&
-            event.repo.name === repoName
-          ) {
-            const prExists = prs.some((pr) => pr.url === event.payload.pull_request.html_url);
-            if (!prExists) {
-              prs.push({
-                repoName: event.repo.name,
-                title: event.payload.pull_request.title,
-                date: new Date(event.created_at).toLocaleString("en-US"),
-                url: event.payload.pull_request.html_url,
-              });
-              prMap[dateStr] = (prMap[dateStr] || 0) + 1;
-            }
-          }
-        });
-      }
-
-      // Process repo-specific events (Nebula_last)
+      // Process repo-specific events
       if (Array.isArray(repoEvents)) {
         repoEvents.forEach((event) => {
           const dateStr = new Date(event.created_at).toLocaleDateString("en-US");
 
           if (event.type === "PushEvent" && event.actor.login === formData.githubId) {
             event.payload.commits.forEach((c) => {
-              if (event.actor.login === formData.githubId) {
-                const commitExists = commits.some((commit) => commit.sha === c.sha);
-                if (!commitExists) {
-                  commits.push({
-                    repoName: event.repo.name,
-                    message: c.message,
-                    date: new Date(event.created_at).toLocaleString("en-US"),
-                    sha: c.sha,
-                    url: `https://github.com/${event.repo.name}/commit/${c.sha}`,
-                  });
-                  commitMap[dateStr] = (commitMap[dateStr] || 0) + 1;
-                }
+              const commitExists = commits.some((commit) => commit.sha === c.sha);
+              if (!commitExists) {
+                commits.push({
+                  repoName: event.repo.name,
+                  message: c.message,
+                  date: new Date(event.created_at).toLocaleString("en-US"),
+                  sha: c.sha,
+                  url: `https://github.com/${event.repo.name}/commit/${c.sha}`,
+                });
+                commitMap[dateStr] = (commitMap[dateStr] || 0) + 1;
               }
             });
           } else if (
@@ -355,7 +280,7 @@ const Profile = ({ repositories }) => {
             event.payload.action === "opened" &&
             event.actor.login === formData.githubId
           ) {
-            console.log("Repo Issue Event:", event);
+            console.log("Issue Event:", event);
             const issueExists = issues.some((issue) => issue.url === event.payload.issue.html_url);
             if (!issueExists) {
               issues.push({
@@ -457,13 +382,15 @@ const Profile = ({ repositories }) => {
         toast.error("GitHub API rate limit exceeded. Please try again later or use a personal access token.");
       } else if (err.message.includes("404")) {
         toast.error("GitHub username or repository not found. Please check your GitHub ID.");
+      } else if (err.message.includes("GitHub token not configured")) {
+        toast.error("GitHub token not configured.");
       } else {
         toast.error("Failed to fetch GitHub data. Please try again later.");
       }
     } finally {
       setIsLoading(false);
     }
-  }, [formData.githubId, formData.username, lastFetched]);
+  }, [formData.githubId, formData.username, lastFetched, user]);
 
   useEffect(() => {
     console.log("Triggering fetchAll with githubId:", formData.githubId);

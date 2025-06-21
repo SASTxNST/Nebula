@@ -14,7 +14,7 @@ const navItems = [
   "Contribute",
 ];
 
-const FloatingNavbar = ({ showLoginState }) => {
+const FloatingNavbar = ({ showLoginState, isLoggedIn: externalLoginState }) => {
   const [hovered, setHovered] = useState("Login");
   const [hoverStyle, setHoverStyle] = useState({ left: 0, width: 0 });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -24,9 +24,42 @@ const FloatingNavbar = ({ showLoginState }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
+    const checkLoginState = () => {
+      const token = localStorage.getItem("token");
+      setIsLoggedIn(!!token);
+    };
+
+    // Check initial state
+    checkLoginState();
+
+    // Listen for storage changes (when token is added/removed)
+    const handleStorageChange = (e) => {
+      if (e.key === "token") {
+        checkLoginState();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    
+    // Also listen for custom events (for same-tab updates)
+    const handleLoginStateChange = () => {
+      checkLoginState();
+    };
+
+    window.addEventListener("loginStateChanged", handleLoginStateChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("loginStateChanged", handleLoginStateChange);
+    };
   }, []);
+
+  // Update login state when external state changes
+  useEffect(() => {
+    if (externalLoginState !== undefined) {
+      setIsLoggedIn(externalLoginState);
+    }
+  }, [externalLoginState]);
 
   useEffect(() => {
     if (hovered && itemRefs.current[hovered] && containerRef.current) {

@@ -24,7 +24,7 @@ export default function ClientLayout({ children }) {
 
     return (
         <>
-            <FloatingNavbar showLoginState={{ setShowLoginPopup }} />
+            <FloatingNavbar showLoginState={{ setShowLoginPopup }} isLoggedIn={isLoggedIn} />
             {children}
             {showLoginPopup && (
                 <LoginFormPopup
@@ -34,7 +34,9 @@ export default function ClientLayout({ children }) {
                         localStorage.setItem("token", token);
                         localStorage.setItem("email", email);
                         setShowLoginPopup(false);
-                        router.push("/leaderboard-contest");
+                        // Dispatch custom event to notify navbar
+                        window.dispatchEvent(new Event("loginStateChanged"));
+                        router.push("/profile");
                     }}
                 />
             )}

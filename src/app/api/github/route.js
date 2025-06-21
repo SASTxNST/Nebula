@@ -26,6 +26,9 @@ export async function POST(request) {
       case 'contributors':
         url = `https://api.github.com/repos/${repoName}/contributors`;
         break;
+      case 'pulls':
+        url = `https://api.github.com/repos/${repoName}/pulls`;
+        break;
       default:
         return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
     }
@@ -33,6 +36,11 @@ export async function POST(request) {
     // Add query parameters for pagination
     const urlWithParams = new URL(url);
     urlWithParams.searchParams.set('per_page', '100');
+    
+    // Add state parameter for pulls endpoint to get all PRs
+    if (endpoint === 'pulls') {
+      urlWithParams.searchParams.set('state', 'all');
+    }
 
     // Make authenticated request to GitHub API
     const response = await fetch(urlWithParams.toString(), {
@@ -110,6 +118,9 @@ export async function GET(request) {
       case 'contributors':
         url = `https://api.github.com/repos/${repoName}/contributors`;
         break;
+      case 'pulls':
+        url = `https://api.github.com/repos/${repoName}/pulls`;
+        break;
       default:
         return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
     }
@@ -117,6 +128,11 @@ export async function GET(request) {
     const urlWithParams = new URL(url);
     urlWithParams.searchParams.set('per_page', '100');
     urlWithParams.searchParams.set('page', page);
+    
+    // Add state parameter for pulls endpoint to get all PRs
+    if (endpoint === 'pulls') {
+      urlWithParams.searchParams.set('state', 'all');
+    }
 
     const response = await fetch(urlWithParams.toString(), {
       headers: {

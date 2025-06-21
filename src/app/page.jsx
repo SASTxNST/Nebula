@@ -43,7 +43,7 @@ function Page() {
 
   return (
     <>
-      <FloatingNavbar showLoginState={{ setShowLoginPopup }} />
+      <FloatingNavbar showLoginState={{ setShowLoginPopup }} isLoggedIn={isLoggedIn} />
 
       <div className="snap-container">
         <section className="snap-section">
@@ -84,7 +84,9 @@ function Page() {
             localStorage.setItem("token", token);
             localStorage.setItem("email", email);
             setShowLoginPopup(false);
-            router.push("/leaderboard-contest");
+            // Dispatch custom event to notify navbar
+            window.dispatchEvent(new Event("loginStateChanged"));
+            router.push("/profile");
           }}
         />
       )}

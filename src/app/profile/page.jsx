@@ -68,7 +68,7 @@ const Profile = ({ repositories }) => {
     prs: [],
   });
 
-  const milestones = [5, 10, 50, 100];
+  const milestones = [1, 5, 10, 15];
 
   useEffect(() => {
     const email = typeof window !== "undefined" ? localStorage.getItem("email") : null;
@@ -355,16 +355,19 @@ const Profile = ({ repositories }) => {
       // if (prs.length >= 1) newAchievements.push("First PR Opened 🔧");
       // if (prs.length >= 5) newAchievements.push("5 PRs Opened 🔧");
       
-      if (prs.length >= 5) newAchievements.push("/Bronze.png");
-      if (prs.length >= 10) newAchievements.push("/Silver.png");
-      if (prs.length > 10) newAchievements.push("/Gold.png");
+
+      if(prs.length >= 1) newAchievements.push("/1PR.svg");
+      if(merges.length >= 1) newAchievements.push("/1PRM.svg");
+      if(merges.length >= 5) newAchievements.push("/5PRM.png");
+      if(merges.length >= 10) newAchievements.push("/10PRM.png");
+      if(merges.length > 10) newAchievements.push("/10PRM+.png");
       setAchievements(newAchievements);
       console.log("Achievements:", newAchievements);
 
-      const totalCommits = commits.length;
-      const nextMilestone = milestones.find((m) => totalCommits < m) || 100;
-      setProgress((totalCommits / nextMilestone) * 100);
-      console.log("Total Commits:", totalCommits, "Next Milestone:", nextMilestone, "Progress:", (totalCommits / nextMilestone) * 100);
+      const totalMerges = merges.length;
+      const nextMilestone = milestones.find((m) => mergeDetails.length < m) || 15;
+      setProgress((totalMerges / nextMilestone) * 100);
+      console.log("Total PRs Merged:", totalMerges, "Next Milestone:", nextMilestone, "Progress:", (totalMerges / nextMilestone) * 100);
 
       const formatMap = (map) =>
         Object.entries(map)
@@ -413,7 +416,7 @@ const Profile = ({ repositories }) => {
   ].filter((entry) => entry.value > 0);
   const pieColors = ["#56d364", "#1f6feb", "#f1e05a", "#ff8c00"];
 
-  const nextMilestone = milestones.find((m) => commitDetails.length < m) || 100;
+  const nextMilestone = milestones.find((m) => mergeDetails.length < m) || 15;
 
   return (
     <div className="min-h-screen bg-[#0d1117] p-2 sm:p-4 md:p-6 text-[#c9d1d9] font-sans">
@@ -498,7 +501,7 @@ const Profile = ({ repositories }) => {
           ></div>
         </div>
         <p className="text-xs sm:text-sm text-[#7d8590] mt-1 sm:mt-2">
-          {commitDetails.length} commits - {progress.toFixed(0)}% to next milestone ({commitDetails.length}/{nextMilestone})
+          {mergeDetails.length} PRs merged - {progress.toFixed(0)}% to next milestone ({mergeDetails.length}/{nextMilestone})
         </p>
       </div>
 
@@ -572,7 +575,7 @@ const Profile = ({ repositories }) => {
                   className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-[#30363d]"
                 />
                 <span className="text-xs sm:text-sm text-[#e6edf3] truncate">{contributor.login}</span>
-                <span className="ml-auto text-xs text-[#7d8590]">{contributor.contributions} commits</span>
+                <span className="ml-auto text-xs text-[#7d8590]">{contributor.contributions} contributions</span>
               </div>
             ))}
           </div>
@@ -586,26 +589,7 @@ const Profile = ({ repositories }) => {
       <div className="bg-[#161b22] p-2 sm:p-4 md:p-5 rounded-lg border border-[#30363d] mb-4 sm:mb-6 md:mb-8">
         <h2 className="text-sm sm:text-base md:text-lg font-semibold mb-2 sm:mb-3 md:mb-4 text-[#e6edf3] border-b border-[#30363d] pb-1 sm:pb-2 md:pb-3">Challenges</h2>
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm text-[#e6edf3]">Complete 5 Commits</span>
-            <span className="text-xs text-[#7d8590]">{commitDetails.length}/5</span>
-          </div>
-          <div className="w-full bg-[#0d1117] rounded-full h-2">
-            <div
-              className="bg-[#56d364] h-2 rounded-full"
-              style={{ width: `${Math.min((commitDetails.length / 5) * 100, 100)}%` }}
-            ></div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xs sm:text-sm text-[#e6edf3]">Merge 1 PR</span>
-            <span className="text-xs text-[#7d8590]">{mergeDetails.length}/1</span>
-          </div>
-          <div className="w-full bg-[#0d1117] rounded-full h-2">
-            <div
-              className="bg-[#56d364] h-2 rounded-full"
-              style={{ width: `${Math.min((mergeDetails.length / 1) * 100, 100)}%` }}
-            ></div>
-          </div>
+          {/* Issue Challenges */}
           <div className="flex items-center justify-between">
             <span className="text-xs sm:text-sm text-[#e6edf3]">Open 1 Issue</span>
             <span className="text-xs text-[#7d8590]">{issueDetails.length}/1</span>
@@ -616,6 +600,38 @@ const Profile = ({ repositories }) => {
               style={{ width: `${Math.min((issueDetails.length / 1) * 100, 100)}%` }}
             ></div>
           </div>
+          
+          {issueDetails.length >= 1 && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-[#e6edf3]">Open 5 Issues</span>
+                <span className="text-xs text-[#7d8590]">{issueDetails.length}/5</span>
+              </div>
+              <div className="w-full bg-[#0d1117] rounded-full h-2">
+                <div
+                  className="bg-[#56d364] h-2 rounded-full"
+                  style={{ width: `${Math.min((issueDetails.length / 5) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </>
+          )}
+          
+          {issueDetails.length >= 5 && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-[#e6edf3]">Open 10 Issues</span>
+                <span className="text-xs text-[#7d8590]">{issueDetails.length}/10</span>
+              </div>
+              <div className="w-full bg-[#0d1117] rounded-full h-2">
+                <div
+                  className="bg-[#56d364] h-2 rounded-full"
+                  style={{ width: `${Math.min((issueDetails.length / 10) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </>
+          )}
+
+          {/* PR Challenges */}
           <div className="flex items-center justify-between">
             <span className="text-xs sm:text-sm text-[#e6edf3]">Open 1 PR</span>
             <span className="text-xs text-[#7d8590]">{prDetails.length}/1</span>
@@ -626,6 +642,78 @@ const Profile = ({ repositories }) => {
               style={{ width: `${Math.min((prDetails.length / 1) * 100, 100)}%` }}
             ></div>
           </div>
+          
+          {prDetails.length >= 1 && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-[#e6edf3]">Open 5 PRs</span>
+                <span className="text-xs text-[#7d8590]">{prDetails.length}/5</span>
+              </div>
+              <div className="w-full bg-[#0d1117] rounded-full h-2">
+                <div
+                  className="bg-[#56d364] h-2 rounded-full"
+                  style={{ width: `${Math.min((prDetails.length / 5) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </>
+          )}
+          
+          {prDetails.length >= 5 && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-[#e6edf3]">Open 10 PRs</span>
+                <span className="text-xs text-[#7d8590]">{prDetails.length}/10</span>
+              </div>
+              <div className="w-full bg-[#0d1117] rounded-full h-2">
+                <div
+                  className="bg-[#56d364] h-2 rounded-full"
+                  style={{ width: `${Math.min((prDetails.length / 10) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </>
+          )}
+
+          {/* Merge PR Challenges */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm text-[#e6edf3]">Merge 1 PR</span>
+            <span className="text-xs text-[#7d8590]">{mergeDetails.length}/1</span>
+          </div>
+          <div className="w-full bg-[#0d1117] rounded-full h-2">
+            <div
+              className="bg-[#56d364] h-2 rounded-full"
+              style={{ width: `${Math.min((mergeDetails.length / 1) * 100, 100)}%` }}
+            ></div>
+          </div>
+          
+          {mergeDetails.length >= 1 && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-[#e6edf3]">Merge 5 PRs</span>
+                <span className="text-xs text-[#7d8590]">{mergeDetails.length}/5</span>
+              </div>
+              <div className="w-full bg-[#0d1117] rounded-full h-2">
+                <div
+                  className="bg-[#56d364] h-2 rounded-full"
+                  style={{ width: `${Math.min((mergeDetails.length / 5) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </>
+          )}
+          
+          {mergeDetails.length >= 5 && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm text-[#e6edf3]">Merge 10 PRs</span>
+                <span className="text-xs text-[#7d8590]">{mergeDetails.length}/10</span>
+              </div>
+              <div className="w-full bg-[#0d1117] rounded-full h-2">
+                <div
+                  className="bg-[#56d364] h-2 rounded-full"
+                  style={{ width: `${Math.min((mergeDetails.length / 10) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

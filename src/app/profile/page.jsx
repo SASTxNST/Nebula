@@ -279,7 +279,6 @@ const Profile = ({ repositories }) => {
 
           if (
             event.type === "IssuesEvent" &&
-            event.payload.action === "opened" &&
             event.actor.login === formData.githubId
           ) {
             console.log("Issue Event:", event);
@@ -297,7 +296,6 @@ const Profile = ({ repositories }) => {
 
           if (
             event.type === "PullRequestEvent" &&
-            event.payload.action === "opened" &&
             event.actor.login === formData.githubId
           ) {
             const prExists = prs.some((pr) => pr.url === event.payload.pull_request.html_url);

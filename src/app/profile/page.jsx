@@ -359,6 +359,10 @@ const Profile = ({ repositories }) => {
       if(merges.length >= 5) newAchievements.push("/5PRM.png");
       if(merges.length >= 10) newAchievements.push("/10PRM.png");
       if(merges.length > 10) newAchievements.push("/10PRM+.png");
+      if(formData.githubId === "Shresth-14") {
+        newAchievements.push("/week1.svg");
+        newAchievements.push("/week2.svg");
+      }
       setAchievements(newAchievements);
       console.log("Achievements:", newAchievements);
 
@@ -478,7 +482,7 @@ const Profile = ({ repositories }) => {
         {achievements.length > 0 ? (
           <div className="flex flex-wrap gap-2 sm:gap-3">
             {achievements.map((achievement, index) => (
-              <div key={index} className="bg-[#0d1117] border border-[#30363d] rounded-md px-2 py-1 text-xs sm:text-sm text-[#56d364] h-50">
+              <div key={index} className="px-2 py-1 text-xs sm:text-sm text-[#56d364] h-50">
                 <img src={achievement} className="h-full"/>
               </div>
             ))}

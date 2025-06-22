@@ -194,6 +194,9 @@ const Profile = ({ repositories }) => {
         fetchAllPages("contributors", formData.githubId, selectedRepo),
       ]);
 
+      // Also fetch PRs directly to check merge status
+      const prsRes = await fetchAllPages("pulls", formData.githubId, selectedRepo);
+
       // Log response headers to check rate limits
       // Note: userEventsRes is now the result data, not a response object
 
@@ -244,6 +247,7 @@ const Profile = ({ repositories }) => {
 
       // Process repo-specific events
       if (Array.isArray(repoEvents)) {
+        console.log("Repo Events:", repoEvents);
         repoEvents.forEach((event) => {
           const dateStr = new Date(event.created_at).toLocaleDateString("en-US");
 
@@ -261,11 +265,32 @@ const Profile = ({ repositories }) => {
                 commitMap[dateStr] = (commitMap[dateStr] || 0) + 1;
               }
             });
-          } else if (
+          } 
+
+          if (
             event.type === "PullRequestEvent" &&
             event.payload.pull_request?.merged &&
             event.actor.login === formData.githubId
           ) {
+            console.log("Merged PR Event:", event);
+            const mergeExists = merges.some((merge) => merge.url === event.payload.pull_request.html_url);
+            if (!mergeExists) {
+              merges.push({
+                repoName: event.repo.name,
+                title: event.payload.pull_request.title,
+                date: new Date(event.payload.pull_request.merged_at).toLocaleString("en-US"),
+                url: event.payload.pull_request.html_url,
+              });
+            }
+          }
+
+          // Also check for merged PRs where the user is the author (not just the actor)
+          if (
+            event.type === "PullRequestEvent" &&
+            event.payload.pull_request?.merged &&
+            event.payload.pull_request?.user?.login === formData.githubId
+          ) {
+            console.log("Merged PR Event (Author):", event);
             const mergeExists = merges.some((merge) => merge.url === event.payload.pull_request.html_url);
             if (!mergeExists) {
               merges.push({
@@ -281,7 +306,6 @@ const Profile = ({ repositories }) => {
             event.type === "IssuesEvent" &&
             event.actor.login === formData.githubId
           ) {
-            console.log("Issue Event:", event);
             const issueExists = issues.some((issue) => issue.url === event.payload.issue.html_url);
             if (!issueExists) {
               issues.push({
@@ -298,6 +322,7 @@ const Profile = ({ repositories }) => {
             event.type === "PullRequestEvent" &&
             event.actor.login === formData.githubId
           ) {
+            console.log("PR Event:", event);
             const prExists = prs.some((pr) => pr.url === event.payload.pull_request.html_url);
             if (!prExists) {
               prs.push({
@@ -312,19 +337,46 @@ const Profile = ({ repositories }) => {
         });
       }
 
+      // Process PRs to find merged ones
+      const mergedPRs = [];
+      if (Array.isArray(prsRes)) {
+        console.log("Processing PRs:", prsRes.length);
+        prsRes.forEach((pr) => {
+          if (pr.user?.login === formData.githubId && pr.merged_at) {
+            console.log("Found merged PR:", pr.title, "merged at:", pr.merged_at);
+            mergedPRs.push({
+              repoName: selectedRepo,
+              title: pr.title,
+              date: new Date(pr.merged_at).toLocaleString("en-US"),
+              url: pr.html_url,
+            });
+          }
+        });
+      }
+
       console.log("Commits:", commits);
       console.log("Merges:", merges);
+      console.log("Direct Merged PRs:", mergedPRs);
       console.log("Issues:", issues);
       console.log("PRs:", prs);
 
+      // Combine merged PRs from events and direct PR fetching
+      const allMerges = [...merges];
+      mergedPRs.forEach((mergedPR) => {
+        const exists = allMerges.some((merge) => merge.url === mergedPR.url);
+        if (!exists) {
+          allMerges.push(mergedPR);
+        }
+      });
+
       if (typeof window !== "undefined") {
         localStorage.setItem("cachedCommits", JSON.stringify(commits));
-        localStorage.setItem("cachedMerges", JSON.stringify(merges));
+        localStorage.setItem("cachedMerges", JSON.stringify(allMerges));
         localStorage.setItem("cachedIssues", JSON.stringify(issues));
         localStorage.setItem("cachedPrs", JSON.stringify(prs));
       }
       setCommitDetails(commits);
-      setMergeDetails(merges);
+      setMergeDetails(allMerges);
       setIssueDetails(issues);
       setPrDetails(prs);
       setLastFetched(now);
@@ -355,10 +407,10 @@ const Profile = ({ repositories }) => {
       
 
       if(prs.length >= 1) newAchievements.push("/1PR.svg");
-      if(merges.length >= 1) newAchievements.push("/1PRM.svg");
-      if(merges.length >= 5) newAchievements.push("/5PRM.png");
-      if(merges.length >= 10) newAchievements.push("/10PRM.png");
-      if(merges.length > 10) newAchievements.push("/10PRM+.png");
+      if(allMerges.length >= 1) newAchievements.push("/1PRM.svg");
+      if(allMerges.length >= 5) newAchievements.push("/5PRM.png");
+      if(allMerges.length >= 10) newAchievements.push("/10PRM.png");
+      if(allMerges.length > 10) newAchievements.push("/10PRM+.png");
       if(formData.githubId === "Shresth-14") {
         newAchievements.push("/week1.svg");
         newAchievements.push("/week2.svg");
@@ -366,8 +418,8 @@ const Profile = ({ repositories }) => {
       setAchievements(newAchievements);
       console.log("Achievements:", newAchievements);
 
-      const totalMerges = merges.length;
-      const nextMilestone = milestones.find((m) => mergeDetails.length < m) || 15;
+      const totalMerges = allMerges.length;
+      const nextMilestone = milestones.find((m) => totalMerges < m) || 15;
       setProgress((totalMerges / nextMilestone) * 100);
       console.log("Total PRs Merged:", totalMerges, "Next Milestone:", nextMilestone, "Progress:", (totalMerges / nextMilestone) * 100);
 
@@ -407,6 +459,12 @@ const Profile = ({ repositories }) => {
     return () => clearInterval(interval);
   }, [fetchAll]);
 
+  useEffect(() => {
+    const totalMerges = mergeDetails.length;
+    const nextMilestone = milestones.find((m) => totalMerges < m) || 15;
+    setProgress((totalMerges / nextMilestone) * 100);
+  }, [mergeDetails]);
+
   const stars = repoMeta[0]?.stargazers_count || 0;
   const forks = repoMeta[0]?.forks_count || 0;
 
@@ -417,8 +475,6 @@ const Profile = ({ repositories }) => {
     { name: "PRs", value: prDetails.length },
   ].filter((entry) => entry.value > 0);
   const pieColors = ["#56d364", "#1f6feb", "#f1e05a", "#ff8c00"];
-
-  const nextMilestone = milestones.find((m) => mergeDetails.length < m) || 15;
 
   return (
     <div className="min-h-screen bg-[#0d1117] p-2 sm:p-4 md:p-6 text-[#c9d1d9] font-sans">
@@ -503,7 +559,7 @@ const Profile = ({ repositories }) => {
           ></div>
         </div>
         <p className="text-xs sm:text-sm text-[#7d8590] mt-1 sm:mt-2">
-          {mergeDetails.length} PRs merged - {progress.toFixed(0)}% to next milestone ({mergeDetails.length}/{nextMilestone})
+          {mergeDetails.length} PRs merged - {progress.toFixed(0)}% to next milestone ({mergeDetails.length}/{milestones.find((m) => mergeDetails.length < m) || 15})
         </p>
       </div>
 

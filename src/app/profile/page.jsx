@@ -282,6 +282,17 @@ const Profile = ({ repositories }) => {
                 url: event.payload.pull_request.html_url,
               });
             }
+
+            const prExists = prs.some((pr) => pr.url === event.payload.pull_request.html_url);
+            if (!prExists) {
+              prs.push({
+                repoName: event.repo.name,
+                title: event.payload.pull_request.title,
+                date: new Date(event.created_at).toLocaleString("en-US"),
+                url: event.payload.pull_request.html_url,
+              });
+              prMap[dateStr] = (prMap[dateStr] || 0) + 1;
+            }
           }
 
           // Also check for merged PRs where the user is the author (not just the actor)
@@ -299,6 +310,17 @@ const Profile = ({ repositories }) => {
                 date: new Date(event.payload.pull_request.merged_at).toLocaleString("en-US"),
                 url: event.payload.pull_request.html_url,
               });
+            }
+
+            const prExists = prs.some((pr) => pr.url === event.payload.pull_request.html_url);
+            if (!prExists) {
+              prs.push({
+                repoName: event.repo.name,
+                title: event.payload.pull_request.title,
+                date: new Date(event.created_at).toLocaleString("en-US"),
+                url: event.payload.pull_request.html_url,
+              });
+              prMap[dateStr] = (prMap[dateStr] || 0) + 1;
             }
           }
 
@@ -351,6 +373,17 @@ const Profile = ({ repositories }) => {
               url: pr.html_url,
             });
           }
+          if(pr.user?.login === formData.githubId ) {
+            const prExists = prs.some((PR) => PR.url === pr.html_url);
+            if (!prExists) {
+              prs.push({
+                repoName: selectedRepo,
+                title: pr.title,
+                date: new Date(pr.created_at).toLocaleString("en-US"),
+                url: pr.html_url,
+              });
+            }
+          }
         });
       }
 
@@ -394,27 +427,28 @@ const Profile = ({ repositories }) => {
       }
 
       const newAchievements = [];
-      // if (commits.length >= 1) newAchievements.push("First Commit 🎉");
-      // if (commits.length >= 5) newAchievements.push("5 Commits 🏆");
-      // if (commits.length >= 10) newAchievements.push("10 Commits 🏆");
-      // if (merges.length >= 1) newAchievements.push("First PR Merged 🚀");
-      // if (merges.length >= 5) newAchievements.push("5 PR Merged 🚀");
-      // if (merges.length >= 10) newAchievements.push("10 PR Merged 🚀");
-      // if (issues.length >= 1) newAchievements.push("First Issue Opened 📋");
-      // if (issues.length >= 5) newAchievements.push("5 Issues Opened 📋");
-      // if (prs.length >= 1) newAchievements.push("First PR Opened 🔧");
-      // if (prs.length >= 5) newAchievements.push("5 PRs Opened 🔧");
-      
 
-      if(prs.length >= 1) newAchievements.push("/1PR.svg");
-      if(allMerges.length >= 1) newAchievements.push("/1PRM.svg");
-      if(allMerges.length >= 5) newAchievements.push("/5PRM.png");
-      if(allMerges.length >= 10) newAchievements.push("/10PRM.png");
-      if(allMerges.length > 10) newAchievements.push("/10PRM+.png");
       if(formData.githubId === "Shresth-14") {
-        newAchievements.push("/week1.svg");
+        newAchievements.push("/top-contributor.svg");
+        newAchievements.push("/cosmic-commit.svg");
         newAchievements.push("/week2.svg");
+        newAchievements.push("/week1.svg");
       }
+      if(formData.githubId === "ABUDIYAAAA") {
+        newAchievements.push("/most-impactful.svg");
+        newAchievements.push("/best-feature.svg");
+        newAchievements.push("/week3");
+      }
+      if(formData.githubId === "Prabhav1437") {
+        newAchievements.push("best-idea.svg");
+      }
+
+      if(allMerges.length > 10) newAchievements.push("/10PRM+.png");
+      if(allMerges.length >= 10) newAchievements.push("/10PRM.png");
+      if(allMerges.length >= 5) newAchievements.push("/5PRM.png");
+      if(allMerges.length >= 1) newAchievements.push("/1PRM.svg");
+      if(prs.length >= 1) newAchievements.push("/1PR.svg");
+
       setAchievements(newAchievements);
       console.log("Achievements:", newAchievements);
 
